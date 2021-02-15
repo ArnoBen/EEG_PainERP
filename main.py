@@ -4,41 +4,61 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import scipy.signal as sg
 import os
-from  utils.signal_processing import bandpass
+from utils.signal_processing import bandpass
+from utils import event_parser
 
 from mne import io
 from mne.datasets import sample
 from mne.cov import compute_covariance
 
+plt.close()
+
 # Get data
-data_path = "//home/arno/Workspace/eeg_painvision/Data Brutes - EEG Arno/20210204163706_arn0-c2-2"
+data_path = "//home/arno/Workspace/eeg_painvision/Data Brutes - EEG Arno/20210204163444_arn0-c2-1"
 
 raw_edf = io.read_raw_edf(data_path + ".edf", preload=True)
-raw_easy = pd.read_csv(data_path + ".easy", sep='\t', names=raw_edf.ch_names)
-data = raw_easy.values.T
+unused_channels = ['X', 'Y', 'Z', 'EXT']
+raw_edf.drop_channels(unused_channels)
+raw_edf.set_montage('standard_1020')
+
+#%% Preprocessing
 
 # Filter data
-fs = 500
+fs = raw_edf.info['sfreq'] # =500
 raw_edf.filter(l_freq=1, h_freq=40, n_jobs=1)
-events_raw = bandpass(raw_edf["C4"][0][0], f1=20, f2=40, fs=fs)
+preprocessed_event_channel = event_parser.preprocess_event_channel(raw_edf)
+events = get_events(preprocessed_event_channel)
+# Drop event channel (here it's C4)
+raw_edf.drop_channels(('C4'))
 
-# Get events
-events_peaks = sg.find_peaks(events_raw, height=130000, distance=fs*0.8)
-# plt.scatter(events_peaks[0], events_peaks[1]['peak_heights'], color='red')
-# plt.plot(events_raw)
+#%% ICA
+method = 'fastica'
 
-# This page provides great info : https://mne.tools/stable/auto_tutorials/intro/plot_20_events_from_raw.html#sphx-glr-auto-tutorials-intro-plot-20-events-from-raw-py
-events = np.zeros((events_peaks[0].shape[0], 3), dtype=np.int32())
-events[:, 0] = events_peaks[0]
-events[:, 2] = 1
+n_components = 18 # if float, select n_components by explained variance of PCA
+decim = 3  # we need sufficient statistics, not all time points -> saves time
 
+# we will also set state of the random number generator - ICA is a
+# non-deterministic algorithm, but we want to have the same decomposition
+# and the same order of components each time this tutorial is run
+random_state = 1
+
+ica = mne.preprocessing.ICA(n_components=n_components, method=method, random_state=random_state)
+ica.fit(raw_edf)
+ica.plot_components(inst=raw_edf)
+ica.plot_sources(inst=raw_edf)
+ica.apply(raw_edf)
+
+#%%
+fix, axes= plt.subplots(2)
 event_id, tmin, tmax = 1, -0.1, 0.7
 epochs = mne.Epochs(raw_edf, events, event_id, tmin, tmax, picks=('eeg'),
                      baseline=None, reject=None, preload=True)
-
+evoked = epochs.average()
+evoked.plot(time_unit='s', spatial_colors=True, gfp=True)
 # filtered_data = bandpass(data=data, f1=1, f2=40, fs=fs, axis=1)
 
 
+#%%
 # for i, ch in enumerate(raw_edf.ch_names):
 #     if 5 < i < 11:
 #         print(ch)
