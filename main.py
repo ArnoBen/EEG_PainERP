@@ -34,22 +34,6 @@ fs = raw_edf.info['sfreq'] # =500
 raw_edf.filter(l_freq=1, h_freq=40, n_jobs=1)
 # Drop event channel (here it's C4)
 raw_edf.drop_channels(('C4'))
-#%% ICA
-method = 'fastica'
-
-n_components = 18 # if float, select n_components by explained variance of PCA
-decim = 3  # we need sufficient statistics, not all time points -> saves time
-
-# we will also set state of the random number generator - ICA is a
-# non-deterministic algorithm, but we want to have the same decomposition
-# and the same order of components each time this tutorial is run
-random_state = 1
-
-ica = mne.preprocessing.ICA(n_components=n_components, method=method, random_state=random_state)
-ica.fit(raw_edf)
-ica.plot_components(inst=raw_edf)
-ica.plot_sources(inst=raw_edf)
-ica.apply(raw_edf)
 
 #%%
 event_id, tmin, tmax = 1, -0.1, 0.7
