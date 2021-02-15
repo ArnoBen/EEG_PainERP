@@ -10,16 +10,17 @@ def get_events(events_peaks):
     events = np.zeros((events_peaks[0].shape[0], 3), dtype=np.int32())
     events[:, 0] = events_peaks[0]
     events[:, 2] = 1
+    return events
     
-    
-def preprocess_event_channel(raw, plot=False):
+def preprocess_event_channel(raw, trigger_ch, plot=False):
     fs = raw.info['sfreq']
-    events_channel = bandpass(raw["C4"][0][0], f1=20, f2=40, fs=fs)
-    events_peaks = sg.find_peaks(events_channel, height=130000, distance=fs*0.8)
+    events_channel = bandpass(raw[trigger_ch][0][0], f1=1, f2=40, fs=fs)
+    height = np.std(events_channel) * 4
+    events_peaks = sg.find_peaks(events_channel, height=height, distance=fs*0.8)
     if plot:
         plt.scatter(events_peaks[0], events_peaks[1]['peak_heights'], color='red')
         plt.plot(events_channel)
-        
+    return events_peaks
 
 def get_false_triggers_from_csv(file):
     random_impulses_info = pd.read_csv("DonneesImpulsionsAleatoires.csv", sep=";", index_col=False)
