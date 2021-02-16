@@ -14,7 +14,7 @@ from mne.cov import compute_covariance
 plt.close()
 
 # Get data
-data_path = "/home/arno/Workspace/eeg_painvision/Data Brutes - EEG Arno/20210204163706_arn0-c2-2"
+data_path = "/home/arno/Workspace/eeg_painvision/Data Brutes - EEG Arno/20210204171318_arn0-c6-2"
 
 raw_edf = io.read_raw_edf(data_path + ".edf", preload=True)
 ref_channel = ['EXT']
@@ -25,7 +25,8 @@ raw_edf.set_montage('standard_1020')
 channels = raw_edf.ch_names
 
 #%% Fetching events
-preprocessed_event_channel = event_parser.preprocess_event_channel(raw_edf, trigger_ch="C4", plot=True)
+preprocessed_event_channel = event_parser.preprocess_event_channel(
+    raw_edf, trigger_ch="C4", plot=True, apply_filter=False)
 events = event_parser.get_events(preprocessed_event_channel)
 
 #%% Preprocessing
@@ -56,13 +57,13 @@ for i, ch in enumerate(channels):
         continue
     single_channel_epoch = epochs.copy().pick(channels[7])
     single_channel_epoch.get_data()
-    for epoch in single_channel_epoch[41:87]:
-        plt.plot(epoch.T)
+    # for epoch in single_channel_epoch[41:87]:
+    #     plt.plot(epoch.T)
     # for ch in single_channel_epoch[-39:]:
     #     plt.plot(ch[0], alpha=0.7)
 channel_mean = np.mean(single_channel_epoch[41:87].get_data(), axis=0)[0]
 channel_std = np.std(single_channel_epoch[41:87].get_data(), axis=0)[0]
-plt.plot(channel_mean, label=ch)
+plt.plot(channel_mean)
 plt.fill_between(range(channel_std.shape[0]),
                  channel_mean-channel_std,
                  channel_mean+channel_std,
