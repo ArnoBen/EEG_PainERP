@@ -17,10 +17,10 @@ plt.close()
 data_path = "/home/arno/Workspace/eeg_painvision/Data Brutes - EEG Arno/20210204163706_arn0-c2-2"
 
 raw_edf = io.read_raw_edf(data_path + ".edf", preload=True)
-# raw_easy = pd.read_csv(data_path + ".easy", sep='\t', names=raw_edf.ch_names)
-# data = raw_easy.values.T
-unused_channels = ['X', 'Y', 'Z', 'EXT']
-raw_edf.drop_channels(unused_channels)
+ref_channel = ['EXT']
+removed_channels = ['X', 'Y', 'Z'] + ref_channel
+raw_edf.set_eeg_reference(ref_channel)
+raw_edf.drop_channels(removed_channels)
 raw_edf.set_montage('standard_1020')
 channels = raw_edf.ch_names
 
@@ -40,17 +40,35 @@ event_id, tmin, tmax = 1, -0.1, 0.7
 epochs = mne.Epochs(raw_filtered, events, event_id, tmin, tmax, picks=('eeg'),
                      baseline=None, reject=None, preload=True)
 
-# evoked = epochs.average()
-# evoked.plot(time_unit='s', spatial_colors=True, gfp=True)
+evoked = epochs.average()
+evoked.plot(time_unit='s', spatial_colors=True, gfp=True)
 # filtered_data = bandpass(data=data, f1=1, f2=40, fs=fs, axis=1)
 
 #%% Looking at all epochs on a single channel
-single_epoch_channel = epochs.copy().pick(channels[7])
-
-# J'ai compté à la main 39 events correctement détectés par le find_peaks
-for ch in single_epoch_channel[-39:]:
-    plt.plot(ch[0])
-
+""" 
+J'ai compté à la main les events correctement détectés par le find_peaks
+25% : 41
+50% : 46
+75% : 39 
+"""
+for i, ch in enumerate(channels):
+    if ch == 'C4':
+        continue
+    single_channel_epoch = epochs.copy().pick(channels[7])
+    single_channel_epoch.get_data()
+    for epoch in single_channel_epoch[41:87]:
+        plt.plot(epoch.T)
+    # for ch in single_channel_epoch[-39:]:
+    #     plt.plot(ch[0], alpha=0.7)
+channel_mean = np.mean(single_channel_epoch[41:87].get_data(), axis=0)[0]
+channel_std = np.std(single_channel_epoch[41:87].get_data(), axis=0)[0]
+plt.plot(channel_mean, label=ch)
+plt.fill_between(range(channel_std.shape[0]),
+                 channel_mean-channel_std,
+                 channel_mean+channel_std,
+                 alpha=.05)
+plt.legend(loc="upper right")
+plt.show()
 #%%
 # for i, ch in enumerate(raw_edf.ch_names):
 #     if i == 10:
@@ -64,3 +82,21 @@ for ch in single_epoch_channel[-39:]:
 # info = mne.create_info(ch_names=ch_names, sfreq=fs, ch_types=ch_types)
 
 #raw_edf.plot(scalings="auto", alpha=0.7)
+
+#%% Using the .easy
+
+raw_easy = pd.read_csv(data_path + ".easy", sep='\t', names=raw_edf.ch_names)
+data = raw_easy.values.T
+
+filtered_data = bandpass(data=data, f1=1, f2=40, fs=fs, axis=1)
+
+# for i, row in enumerate(filtered_data):
+#     plt.plot(row, alpha=0.7, label=i)
+ch_names = raw_edf.ch_names
+
+ch_types = ['eeg'] * len(ch_names)
+info = mne.create_info(ch_names=ch_names, sfreq=fs, ch_types=ch_types)
+
+raw_mne = io.RawArray(raw_easy.values.T, info)
+
+raw_edf.plot(scalings="auto") 
