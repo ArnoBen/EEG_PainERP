@@ -26,7 +26,7 @@ channels = raw_edf.ch_names
 
 #%% Fetching events
 preprocessed_event_channel = event_parser.preprocess_event_channel(
-    raw_edf, trigger_ch="C4", plot=True, apply_filter=False)
+    raw_edf, trigger_ch="C4", apply_filter=False, plot=True, include_csv=True)
 events = event_parser.get_events(preprocessed_event_channel)
 
 #%% Preprocessing

@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from utils.signal_processing import bandpass
 from scipy import signal as sg
 
+
 def get_events(events_peaks):
     # This page provides great info : https://mne.tools/stable/auto_tutorials/intro/plot_20_events_from_raw.html#sphx-glr-auto-tutorials-intro-plot-20-events-from-raw-py
     events = np.zeros((events_peaks[0].shape[0], 3), dtype=np.int32())
@@ -12,7 +13,8 @@ def get_events(events_peaks):
     events[:, 2] = 1
     return events
     
-def preprocess_event_channel(raw, trigger_ch, plot=False, apply_filter=False):
+
+def preprocess_event_channel(raw, trigger_ch, apply_filter=False, plot=False, include_csv=False):
     fs = raw.info['sfreq']
     events_channel = raw[trigger_ch][0][0]
     if apply_filter:
@@ -22,16 +24,20 @@ def preprocess_event_channel(raw, trigger_ch, plot=False, apply_filter=False):
     if plot:
         plt.scatter(events_peaks[0], events_peaks[1]['peak_heights'], color='red')
         plt.plot(events_channel)
-        csv_triggers = get_false_triggers_from_csv("DonneesImpulsionsAleatoires.csv")
-        plt.vlines(csv_triggers["ImpulsionTime"] * 500 + 342, 0, 2000000, color="gray")
+        if include_csv:
+            csv_triggers = get_false_triggers_from_csv("DonneesImpulsionsAleatoires.csv")
+            pain_inflicted = csv_triggers["PainInflicted"]
+            plt.vlines(csv_triggers["ImpulsionTime"][pain_inflicted==True] * 500 + 342, 0, 2000000, color="black")
+            plt.vlines(csv_triggers["ImpulsionTime"][pain_inflicted==False] * 500 + 342, 0, 2000000, color="lightgray")
+                                                                           
         plt.show()
         
     return events_peaks
+
 
 def get_false_triggers_from_csv(file):
     random_impulses_info = pd.read_csv(file, sep=";", index_col=False)
     impulsions_times = np.zeros(random_impulses_info.shape[0])
     impulsions_times[1:] = np.cumsum([random_impulses_info["ImpulsionInterval"]])[:-1]
     random_impulses_info["ImpulsionTime"] = impulsions_times
-    return random_impulses_info[["ImpulsionTime", "PainInflicted"]]
-    
+    return random_impulses_info
