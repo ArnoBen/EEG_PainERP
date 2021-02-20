@@ -12,6 +12,8 @@ matplotlib = "*"
 pandas = "*"
 scipy = "*"
 jupyter = "*"
+pywavelets = "*"
+scaleogram = "*"
 
 [dev-packages]
 

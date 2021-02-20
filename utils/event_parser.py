@@ -24,6 +24,7 @@ def preprocess_event_channel(raw, trigger_ch, apply_filter=False, plot=False, in
     if plot:
         plt.scatter(events_peaks[0], events_peaks[1]['peak_heights'], color='red')
         plt.plot(events_channel)
+        plt.title("Trigger channel")
         if include_csv:
             csv_triggers = get_false_triggers_from_csv("DonneesImpulsionsAleatoires.csv")
             pain_inflicted = csv_triggers["PainInflicted"]
