@@ -56,7 +56,7 @@ window = fs
 fig, ax = plt.subplots()
 Pxx, freqs, bins, im = ax.specgram(data, NFFT=window, Fs=fs, noverlap=window/2, cmap="viridis", vmin=30, vmax=70)
 ax.set_title('Spectrogram of O2 channel')
-ax.set_ylim((0,50))
+ax.set_ylim((0,45))
 ax.set_xlabel('time (h:mm:ss)')
 ax.set_ylabel('frequency (Hz)')
 fig.colorbar(im).set_label('Amplitude (dB)')
