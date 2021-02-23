@@ -15,7 +15,7 @@ from mne.cov import compute_covariance
 plt.close()
 
 # Get data
-data_path = "/home/arno/Workspace/eeg_painvision/Data Brutes - EEG Arno/20210204163706_arn0-c2-2"
+data_path = "/home/arno/Workspace/eeg_painvision/Data Brutes - EEG Arno/20210204171318_arn0-c6-2"
 
 raw_edf = io.read_raw_edf(data_path + ".edf", preload=True)
 removed_channels = ['X', 'Y', 'Z', 'EXT'] #+  ['C4']
@@ -35,9 +35,10 @@ events = event_parser.get_events(preprocessed_event_channel)
 # Drop event channel (here it's C4)
 #raw_edf.drop_channels(('C4'))
 # Filter data
+plt.close("all")
 fs = int(raw_edf.info['sfreq']) # =500
 nyq = int(fs/2)
-data = raw_edf.get_data()[15]
+data = raw_edf.get_data()[7]
 raw_filtered = raw_edf.filter(l_freq=1, h_freq=40, n_jobs=1)
 
 # CWT
@@ -51,8 +52,15 @@ raw_filtered = raw_edf.filter(l_freq=1, h_freq=40, n_jobs=1)
 
 # Spectrogram
 
-window = fs*2
-Pxx, freqs, bins, im = plt.specgram(data, NFFT=window, Fs=fs, noverlap=window/2)
+window = fs
+fig, ax = plt.subplots()
+Pxx, freqs, bins, im = ax.specgram(data, NFFT=window, Fs=fs, noverlap=window/2, cmap="viridis", vmin=30, vmax=70)
+ax.set_title('Spectrogram of O2 channel')
+ax.set_ylim((0,50))
+ax.set_xlabel('time (h:mm:ss)')
+ax.set_ylabel('frequency (Hz)')
+fig.colorbar(im).set_label('Amplitude (dB)')
+
 # Reduction de la taille des données : récupérer uniquements les points < 60Hz
 # Le tableau est de la taille 251 lignes x n colonnes (varie selon le temps et la taille des fenêtres)
 # 250Hz (SamplingRate/2) --> 251 lignes, donc 60Hz --> 60 lignes.
@@ -67,6 +75,7 @@ evoked = epochs.average()
 evoked.plot(time_unit='s', spatial_colors=True, gfp=True)
 # filtered_data = bandpass(data=data, f1=1, f2=40, fs=fs, axis=1)
 
+
 #%% Looking at all epochs on a single channel
 """ 
 J'ai compté à la main les events correctement détectés par le find_peaks
@@ -80,15 +89,15 @@ for i, ch in enumerate(channels):
     single_channel_epochs = epochs.copy().pick(channels[i])
     single_channel_epochs.get_data()
     # for epoch in single_channel_epochs[41:87]:
-    #     plt.plot(epoch.T)
+    #     plt.plot(epoch.T, alpha=.5)
     channel_mean = np.mean(single_channel_epochs[41:87].get_data(), axis=0)[0]
     channel_std = np.std(single_channel_epochs[41:87].get_data(), axis=0)[0]
     plt.plot(channel_mean, label=ch)
     plt.fill_between(range(channel_std.shape[0]),
-                     channel_mean-channel_std,
-                     channel_mean+channel_std,
-                     alpha=.04)
-plt.vlines(50,-1.9e4,3e4,color="black")
+                      channel_mean-channel_std,
+                      channel_mean+channel_std,
+                      alpha=.04)
+plt.vlines(50,-1.9e5,3e4,color="black")
 plt.legend(loc="upper right")
 plt.show()
 #%%
